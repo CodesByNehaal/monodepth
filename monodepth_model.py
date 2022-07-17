@@ -17,7 +17,8 @@ from collections import namedtuple
 
 import numpy as np
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
+import tf_slim as slim
+
 
 from bilinear_sampler import *
 
@@ -68,7 +69,7 @@ class MonodepthModel(object):
         s = tf.shape(x)
         h = s[1]
         w = s[2]
-        return tf.image.resize_nearest_neighbor(x, [h * ratio, w * ratio])
+        return tf.compat.v1.image.resize_nearest_neighbor(x, [h * ratio, w * ratio])
 
     def scale_pyramid(self, img, num_scales):
         scaled_imgs = [img]
@@ -79,7 +80,7 @@ class MonodepthModel(object):
             ratio = 2 ** (i + 1)
             nh = h // ratio
             nw = w // ratio
-            scaled_imgs.append(tf.image.resize_area(img, [nh, nw]))
+            scaled_imgs.append(tf.compat.v1.image.resize_area(img, [nh, nw]))
         return scaled_imgs
 
     def generate_image_left(self, img, disp):
@@ -176,7 +177,7 @@ class MonodepthModel(object):
         else:
             upconv = self.upconv
 
-        with tf.variable_scope('encoder'):
+        with tf.compat.v1.variable_scope('encoder'):
             conv1 = self.conv_block(self.model_input,  32, 7) # H/2
             conv2 = self.conv_block(conv1,             64, 5) # H/4
             conv3 = self.conv_block(conv2,            128, 3) # H/8
@@ -185,7 +186,7 @@ class MonodepthModel(object):
             conv6 = self.conv_block(conv5,            512, 3) # H/64
             conv7 = self.conv_block(conv6,            512, 3) # H/128
 
-        with tf.variable_scope('skips'):
+        with tf.compat.v1.variable_scope('skips'):
             skip1 = conv1
             skip2 = conv2
             skip3 = conv3
@@ -193,7 +194,7 @@ class MonodepthModel(object):
             skip5 = conv5
             skip6 = conv6
         
-        with tf.variable_scope('decoder'):
+        with tf.compat.v1.variable_scope('decoder'):
             upconv7 = upconv(conv7,  512, 3, 2) #H/64
             concat7 = tf.concat([upconv7, skip6], 3)
             iconv7  = conv(concat7,  512, 3, 1)
@@ -287,7 +288,7 @@ class MonodepthModel(object):
 
     def build_model(self):
         with slim.arg_scope([slim.conv2d, slim.conv2d_transpose], activation_fn=tf.nn.elu):
-            with tf.variable_scope('model', reuse=self.reuse_variables):
+            with tf.compat.v1.variable_scope('model', reuse=self.reuse_variables):
 
                 self.left_pyramid  = self.scale_pyramid(self.left,  4)
                 if self.mode == 'train':
@@ -308,7 +309,7 @@ class MonodepthModel(object):
 
     def build_outputs(self):
         # STORE DISPARITIES
-        with tf.variable_scope('disparities'):
+        with tf.compat.v1.variable_scope('disparities'):
             self.disp_est  = [self.disp1, self.disp2, self.disp3, self.disp4]
             self.disp_left_est  = [tf.expand_dims(d[:,:,:,0], 3) for d in self.disp_est]
             self.disp_right_est = [tf.expand_dims(d[:,:,:,1], 3) for d in self.disp_est]
