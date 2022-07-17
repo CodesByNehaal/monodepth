@@ -17,10 +17,14 @@ import numpy as np
 import argparse
 import re
 import time
-import tensorflow as tf
-import tensorflow.contrib.slim as slim
 import scipy.misc
 import matplotlib.pyplot as plt
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
+from absl import app
+
+
+
 
 from monodepth_model import *
 from monodepth_dataloader import *
@@ -49,7 +53,7 @@ def post_process_disparity(disp):
 def test_simple(params):
     """Test function."""
 
-    left  = tf.placeholder(tf.float32, [2, args.input_height, args.input_width, 3])
+    left  = tf.compat.v1.placeholder(tf.float32, [2, args.input_height, args.input_width, 3])
     model = MonodepthModel(params, "test", left, None)
 
     input_image = scipy.misc.imread(args.image_path, mode="RGB")
@@ -59,17 +63,17 @@ def test_simple(params):
     input_images = np.stack((input_image, np.fliplr(input_image)), 0)
 
     # SESSION
-    config = tf.ConfigProto(allow_soft_placement=True)
-    sess = tf.Session(config=config)
+    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
+    sess = tf.compat.v1.Session(config=config)
 
     # SAVER
-    train_saver = tf.train.Saver()
+    train_saver = tf.compat.v1.train.Saver()
 
     # INIT
-    sess.run(tf.global_variables_initializer())
-    sess.run(tf.local_variables_initializer())
-    coordinator = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(sess=sess, coord=coordinator)
+    sess.run(tf.compat.v1.global_variables_initializer())
+    sess.run(tf.compat.v1.local_variables_initializer())
+    coordinator = tf.compat.v1.train.Coordinator()
+    threads = tf.compat.v1.train.start_queue_runners(sess=sess, coord=coordinator)
 
     # RESTORE
     restore_path = args.checkpoint_path.split(".")[0]
@@ -107,4 +111,4 @@ def main(_):
     test_simple(params)
 
 if __name__ == '__main__':
-    tf.app.run()
+  tf.compat.v1.app.run()
